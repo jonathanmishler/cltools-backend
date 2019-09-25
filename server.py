@@ -32,18 +32,18 @@ def test_connect():
 def test_disconnect():
     print('Client disconnected')
 
-@socketio.on('getQuote')
+@socketio.on('get_quote')
 def parts_quoter(parts):
     print(parts)
     q = Quoter()
     asynio.run(quote_looper(q,parts))
     emit('received', f"Recieved {len(parts)} part numbers and sent to quoter process")    
 
-async quote_looper(q, parts_list):
+async def quote_looper(q, parts_list):
     for part in parts_list:
-        info = await q.part(part['pn'])
+        info = await q.part(part[1])
         data = {
-            'index': part['index'],
+            'index': part[0],
             'quote': info 
         }
         emit('partQuote', data)
