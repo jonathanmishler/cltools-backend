@@ -9,12 +9,8 @@ verify_ssl = true
 flask = "*"
 flask-socketio = "*"
 eventlet = "*"
-flask-restplus = "*"
 flask-cors = "*"
-celery = "*"
 redis = "*"
-atparts = {path = "C:/Users/jonat/dev/atparts/dist/atparts-0.1-py2.py3-none-any.whl"}
+atparts = {path = "/mnt/c/users/jonat/dev/atparts/dist/atparts-0.1-py2.py3-none-any.whl"}
 requests-html = {git = "https://github.com/psf/requests-html.git"}
-
-[requires]
-python_version = "3.7"
+rq = "*"
