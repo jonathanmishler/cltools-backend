@@ -10,11 +10,18 @@ from flask_socketio import SocketIO, emit
 import eventlet
 eventlet.monkey_patch()
 
+import rq_dashboard
+
 from quoter import Quoter
 
 app = Flask(__name__)
 app.secret_key = binascii.hexlify(os.urandom(24))
 socketio = SocketIO(app, async_mode='eventlet', cors_allowed_origins="*", engineio_logger=True)
+
+#setup rq dashboard
+app.config.from_object(rq_dashboard.default_settings)
+app.register_blueprint(rq_dashboard.blueprint, url_prefix="/rq")
+
 
 @socketio.on('connect')
 def test_connect():
@@ -25,34 +32,21 @@ def test_connect():
 def test_disconnect():
     print('Client disconnected')
 
-@socketio.on('parts')
+@socketio.on('getQuote')
 def parts_quoter(parts):
     print(parts)
-    parts_info = []
-    total = len(parts)
     q = Quoter()
-    for idx, part in enumerate(parts):
-        progress = {
-            'current': part['pn'],
-            'total': total,
-            'complete': idx
-        }
-        emit('progress', progress)
-        info = q.part(part['pn'])
-        if info: 
-            info['qty'] = part['qty']
-            info['vendor'] = 'Air Tractor'
-        else:
-            info = part
-            info['desc'] = 'Not Found'
-        parts_info.append(info)
-        progress = {
-            'current': part['pn'],
-            'total': total,
-            'complete': idx + 1
-        }
-    emit('partsInfo', parts_info)    
+    asynio.run(quote_looper(q,parts))
+    emit('received', f"Recieved {len(parts)} part numbers and sent to quoter process")    
 
+async quote_looper(q, parts_list):
+    for part in parts_list:
+        info = await q.part(part['pn'])
+        data = {
+            'index': part['index'],
+            'quote': info 
+        }
+        emit('partQuote', data)
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)
