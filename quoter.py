@@ -9,7 +9,7 @@ from rq.job import Job
 
 # Setup RQ with REdis
 redis_conn = Redis('localhost', 6379)
-quoter_queue = Queue('quoter', connection=resid_conn)
+quoter_queue = Queue('quoter', connection=redis_conn)
 
 class Quoter:
 
@@ -26,12 +26,14 @@ class Quoter:
         self.active = False
     
     async def part(self, pn: str):
-        info = quoter_queue.enqueue(atparts.get_part(self.session, pn, self.loggedin, verbose=True))
+        info = quoter_queue.enqueue(atparts.get_part, self.session, pn, self.loggedin, True)
         job = Job.fetch(info.id, connection=redis_conn)
-        while job.get_status != 'finished':
-            if job.get_status == 'failed':
+        job_status = job.get_status()
+        while job_status!= 'finished':
+            if job_status == 'failed':
                 return None
             job = Job.fetch(info.id, connection=redis_conn)
+            job_status = job.get_status()
         info = job.result
 
         if info:
